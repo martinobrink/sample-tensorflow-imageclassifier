@@ -117,6 +117,13 @@ public class TtsSpeaker {
 
     }
 
+    public void speakSimpleText(TextToSpeech tts, String textToSpeak) {
+        if (tts != null) {
+            tts.speak(textToSpeak, TextToSpeech.QUEUE_ADD, null, UTTERANCE_ID);
+        }
+    }
+
+
     private boolean playJoke(TextToSpeech tts) {
         long now = System.currentTimeMillis();
         // choose a random joke whose last occurrence was far enough in the past

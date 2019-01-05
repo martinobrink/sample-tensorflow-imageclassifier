@@ -19,9 +19,6 @@ import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.util.Log;
-
-import com.example.androidthings.imageclassifier.classifier.Recognition;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -33,7 +30,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -78,21 +74,20 @@ public class TensorFlowHelper {
     public static Collection<Recognition> getBestResults(byte[][] labelProbArray,
                                                          List<String> labelList) {
         PriorityQueue<Recognition> sortedLabels = new PriorityQueue<>(RESULTS_TO_SHOW,
-                new Comparator<Recognition>() {
-                    @Override
-                    public int compare(Recognition lhs, Recognition rhs) {
-                        return Float.compare(lhs.getConfidence(), rhs.getConfidence());
-                    }
-                });
+                (lhs, rhs) -> Float.compare(lhs.getConfidence(), rhs.getConfidence()));
 
 
         for (int i = 0; i < labelList.size(); ++i) {
-            Recognition r = new Recognition( String.valueOf(i),
-                    labelList.get(i), (labelProbArray[0][i] & 0xff) / 255.0f);
+            Recognition r = new Recognition(
+                    String.valueOf(i),
+                    labelList.get(i),
+                    (labelProbArray[0][i] & 0xff) / 255.0f);
             sortedLabels.add(r);
+            /*
             if (r.getConfidence() > 0) {
                 Log.d("ImageRecognition", r.toString());
             }
+            */
             if (sortedLabels.size() > RESULTS_TO_SHOW) {
                 sortedLabels.poll();
             }
