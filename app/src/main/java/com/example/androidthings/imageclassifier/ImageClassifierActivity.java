@@ -147,18 +147,15 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             mTtsSpeaker = new TtsSpeaker();
             mTtsSpeaker.setHasSenseOfHumor(false);
             mTtsEngine = new TextToSpeech(ImageClassifierActivity.this,
-                    new TextToSpeech.OnInitListener() {
-                        @Override
-                        public void onInit(int status) {
-                            if (status == TextToSpeech.SUCCESS) {
-                                mTtsEngine.setLanguage(Locale.US);
-                                mTtsEngine.setOnUtteranceProgressListener(utteranceListener);
-                                mTtsSpeaker.speakReady(mTtsEngine);
-                            } else {
-                                Log.w(TAG, "Could not open TTS Engine (onInit status=" + status
-                                        + "). Ignoring text to speech");
-                                mTtsEngine = null;
-                            }
+                    status -> {
+                        if (status == TextToSpeech.SUCCESS) {
+                            mTtsEngine.setLanguage(Locale.US);
+                            mTtsEngine.setOnUtteranceProgressListener(utteranceListener);
+                            mTtsSpeaker.speakReady(mTtsEngine);
+                        } else {
+                            Log.w(TAG, "Could not open TTS Engine (onInit status=" + status
+                                    + "). Ignoring text to speech");
+                            mTtsEngine = null;
                         }
                     });
 
@@ -269,50 +266,11 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
         final Collection<Recognition> results = mTensorFlowClassifier.doRecognize(bitmap);
         Log.d(TAG, "Got the following results from Tensorflow: " + results);
 
-        runOnUiThread(() -> {
-            if (results == null || results.isEmpty()) {
-                mResultText.setText("I don't understand what I see");
-            } else {
-                StringBuilder sb = new StringBuilder();
-                Iterator<Recognition> it = results.iterator();
-                int counter = 0;
-                while (it.hasNext()) {
-                    Recognition r = it.next();
-                    sb.append(r.getTitle());
-                    counter++;
-                    if (counter < results.size() - 1) {
-                        sb.append(", ");
-                    } else if (counter == results.size() - 1) {
-                        sb.append(" or ");
-                    }
-                }
-                mResultText.setText(sb.toString());
-            }
-        });
-
-
-/*
-
-        if (mTtsEngine != null) {
-            // speak out loud the result of the image recognition
-            mTtsSpeaker.speakResults(mTtsEngine, results);
-        } else {
-            // if theres no TTS, we don't need to wait until the utterance is spoken, so we set
-            // to ready right away.
-            setReady(true);
-        }
-*/
-
-        //try {
+        runOnUiThread(() -> mResultText.setText(createResultsDescription(results)));
 
         boolean imageContainsACat = results.stream().anyMatch(x -> x.getTitle().contains("cat"));
 
         if (imageContainsACat && mTtsSpeaker != null) {
-            /*
-            if (mTtsSpeaker != null) {
-                mTtsSpeaker.speakSimpleText(mTtsEngine, "Cat!");
-            }
-            */
             if (mMediaPlayer != null) {
                 if (mMediaPlayer.isPlaying()) {
                     mMediaPlayer.stop();
@@ -320,15 +278,39 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
                 mMediaPlayer.start();
             }
         } else {
+            if (mTtsSpeaker != null && results.size() > 0)  {
+                Recognition mostLikelyResult =
+                        results.stream()
+                                .max((lhs, rhs) -> Float.compare(lhs.getConfidence(), rhs.getConfidence()))
+                                .get();
+
+                mTtsSpeaker.speakSimpleText(mTtsEngine, mostLikelyResult.getTitle());
+            }
             Log.d(TAG, "-- no cat --");
         }
 
         setReady(true);
-            /*
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    }
+
+    private String createResultsDescription(Collection<Recognition> results) {
+        if (results == null || results.isEmpty()) {
+            return "I don't understand what I see";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            Iterator<Recognition> it = results.iterator();
+            int counter = 0;
+            while (it.hasNext()) {
+                Recognition r = it.next();
+                sb.append(r.getTitle());
+                counter++;
+                if (counter < results.size() - 1) {
+                    sb.append(", ");
+                } else if (counter == results.size() - 1) {
+                    sb.append(" or ");
+                }
+            }
+            return sb.toString();
         }
-*/
     }
 
     @Override
