@@ -50,6 +50,7 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class ImageClassifierActivity extends Activity implements ImageReader.OnImageAvailableListener {
     private static final String TAG = "ImageClassifierActivity";
@@ -59,6 +60,9 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
 
     /* Key code used by GPIO button to trigger image capture */
     private static final int SHUTTER_KEYCODE = KeyEvent.KEYCODE_CAMERA;
+
+
+
 
     private ImagePreprocessor mImagePreprocessor;
     private TextToSpeech mTtsEngine;
@@ -78,6 +82,8 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
 
     private Timer mTimer = null;
     private MediaPlayer mMediaPlayer = null;
+    private PushNotificationSender pushNotificationSender;
+
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -88,8 +94,10 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
         mImage = findViewById(R.id.imageView);
         mResultText = findViewById(R.id.resultText);
 
+        pushNotificationSender = new PushNotificationSender(this);
+
         init();
-        //CameraHandler.dumpFormatInfo(this);
+
         startBackgroundThread();
     }
 
@@ -276,6 +284,7 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
                     mMediaPlayer.stop();
                 }
                 mMediaPlayer.start();
+                pushNotificationSender.sendNotification("Cat detected!", "The following results were received: " + results.stream().map(x->x.getTitle()).collect(Collectors.joining(",")));
             }
         } else {
             if (mTtsSpeaker != null && results.size() > 0)  {
