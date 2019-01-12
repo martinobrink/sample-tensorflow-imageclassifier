@@ -125,9 +125,9 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             mReadyLED = pioManager.openGpio(BoardDefaults.getGPIOForLED());
             mReadyLED.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
             mButtonDriver = new ButtonInputDriver(
-                    BoardDefaults.getGPIOForButton(),
+                    GpioHelper.BUTTON_A,
                     Button.LogicState.PRESSED_WHEN_LOW,
-                    SHUTTER_KEYCODE);
+                    KeyEvent.KEYCODE_A);
             mButtonDriver.register();
         } catch (IOException e) {
             mButtonDriver = null;
@@ -210,7 +210,7 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         Log.d(TAG, "Received key up: " + keyCode);
-        if (keyCode == SHUTTER_KEYCODE) {
+        if (keyCode == KeyEvent.KEYCODE_A) {
             if (mTimer == null) {
                 mTimer = new Timer();
                 mTimer.schedule(new TimerTask() {
