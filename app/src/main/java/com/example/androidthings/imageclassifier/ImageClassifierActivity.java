@@ -58,12 +58,6 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
     // Matches the images used to train the TensorFlow model
     private static final Size MODEL_IMAGE_SIZE = new Size(224, 224);
 
-    /* Key code used by GPIO button to trigger image capture */
-    private static final int SHUTTER_KEYCODE = KeyEvent.KEYCODE_CAMERA;
-
-
-
-
     private ImagePreprocessor mImagePreprocessor;
     private TextToSpeech mTtsEngine;
     private TtsSpeaker mTtsSpeaker;
@@ -82,7 +76,7 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
 
     private Timer mTimer = null;
     private MediaPlayer mMediaPlayer = null;
-    private PushNotificationSender pushNotificationSender;
+    private PushNotificationSender mPushNotificationSender;
 
 
     @Override
@@ -94,32 +88,24 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
         mImage = findViewById(R.id.imageView);
         mResultText = findViewById(R.id.resultText);
 
-        pushNotificationSender = new PushNotificationSender(this);
-
-        init();
+        initialize();
 
         startBackgroundThread();
     }
 
-    private void init() {
+    private void initialize() {
         if (isAndroidThingsDevice(this)) {
-            initPIO();
+            initGPIO();
         }
 
         mMediaPlayer = MediaPlayer.create(this, R.raw.dog_barking);
-    }
-
-    private void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("BackgroundThread");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-        mBackgroundHandler.post(mInitializeOnBackground);
+        mPushNotificationSender = new PushNotificationSender(this);
     }
 
     /**
      * This method should only be called when running on an Android Things device.
      */
-    private void initPIO() {
+    private void initGPIO() {
         PeripheralManager pioManager = PeripheralManager.getInstance();
         try {
             mReadyLED = pioManager.openGpio(BoardDefaults.getGPIOForLED());
@@ -133,6 +119,13 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             mButtonDriver = null;
             Log.w(TAG, "Could not open GPIO pins", e);
         }
+    }
+
+    private void startBackgroundThread() {
+        mBackgroundThread = new HandlerThread("BackgroundThread");
+        mBackgroundThread.start();
+        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        mBackgroundHandler.post(mInitializeOnBackground);
     }
 
     private Runnable mInitializeOnBackground = new Runnable() {
@@ -175,18 +168,6 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             }
 
             setReady(true);
-        }
-    };
-
-    private Runnable mBackgroundClickHandler = new Runnable() {
-        @Override
-        public void run() {
-            /*
-            if (mTtsEngine != null) {
-                mTtsSpeaker.speakShutterSound(mTtsEngine);
-            }
-            */
-            mCameraHandler.takePicture();
         }
     };
 
@@ -248,6 +229,13 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
         }
     }
 
+    private Runnable mBackgroundClickHandler = new Runnable() {
+        @Override
+        public void run() {
+            mCameraHandler.takePicture();
+        }
+    };
+
     /**
      * Mark the system as ready for a new image capture
      */
@@ -287,7 +275,7 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             }
 
             String imageRecognitionResults = results.stream().map(x -> x.getTitle()).collect(Collectors.joining(", "));
-            pushNotificationSender.sendNotification("Cat detected!", "Image recognition results: " + imageRecognitionResults);
+            mPushNotificationSender.sendNotification("Cat detected!", "Image recognition results: " + imageRecognitionResults);
         } else {
             if (mTtsSpeaker != null && results.size() > 0)  {
                 Recognition mostLikelyResult =
