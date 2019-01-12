@@ -11,12 +11,15 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
 public class PushNotificationSender {
 
+    private int PUSH_NOTIFICATION_GRACE_PERIOD_SECONDS = 20;
     private final RequestQueue requestQueue;
+    private Calendar lastPushNotificationSent = Calendar.getInstance();
 
     public PushNotificationSender(Context context) {
         requestQueue = Volley.newRequestQueue(context);
@@ -24,39 +27,36 @@ public class PushNotificationSender {
 
     public void sendNotification(String title, String message) {
 
-        try {
-            String notificationUrl = "https://api.pushbullet.com/v2/pushes";
-            JSONObject jsonBody = new JSONObject();
-            jsonBody.put("type", "note");
-            jsonBody.put("title", title);
-            jsonBody.put("body", message);
+        Calendar now = Calendar.getInstance();
 
-            JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, notificationUrl, jsonBody,
-                    response -> {
-                        Log.i("HEST", "DET GIK GODT!");
+        if (now.getTimeInMillis() - lastPushNotificationSent.getTimeInMillis() > 1000 * PUSH_NOTIFICATION_GRACE_PERIOD_SECONDS) {
+            try {
+                String notificationUrl = "https://api.pushbullet.com/v2/pushes";
+                JSONObject jsonBody = new JSONObject();
+                jsonBody.put("type", "note");
+                jsonBody.put("title", title);
+                jsonBody.put("body", message);
 
-                //Toast.makeText(getApplicationContext(), "Response:  " + response.toString(), Toast.LENGTH_SHORT).show();
-            }, error -> {
+                JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, notificationUrl, jsonBody,
+                        response -> {
+                            Log.i("PUSH_NOTIFICATION", "Sending success.");
+                            lastPushNotificationSent = Calendar.getInstance();
+                        },
+                        error -> Log.e("PUSH_NOTIFICATION", "Sending failure!"))
+                {
+                    @Override
+                    public Map<String, String> getHeaders() {
+                        final Map<String, String> headers = new HashMap<>();
+                        headers.put("Access-Token", "o.MdUfjfpmMK0E0lXf8Y9raxah6GQlNoOy");
+                        headers.put("Content-Type", "application/json");
+                        return headers;
+                    }
+                };
+                requestQueue.add(jsonObjectRequest);
 
-                Log.e("HEST", "DET GIK SKIDT!");
-                //onBackPressed();
-
-            }) {
-                @Override
-                public Map<String, String> getHeaders() {
-                    final Map<String, String> headers = new HashMap<>();
-                    headers.put("Access-Token", "o.MdUfjfpmMK0E0lXf8Y9raxah6GQlNoOy");
-                    headers.put("Content-Type", "application/json");
-                    return headers;
-                }
-            };
-            requestQueue.add(jsonObjectRequest);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
-        // Toast.makeText(getApplicationContext(), "done", Toast.LENGTH_LONG).show();
-
     }
-
 }

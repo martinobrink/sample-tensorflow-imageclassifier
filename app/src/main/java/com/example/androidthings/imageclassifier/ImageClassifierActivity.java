@@ -284,8 +284,10 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
                     mMediaPlayer.stop();
                 }
                 mMediaPlayer.start();
-                pushNotificationSender.sendNotification("Cat detected!", "The following results were received: " + results.stream().map(x->x.getTitle()).collect(Collectors.joining(",")));
             }
+
+            String imageRecognitionResults = results.stream().map(x -> x.getTitle()).collect(Collectors.joining(", "));
+            pushNotificationSender.sendNotification("Cat detected!", "Image recognition results: " + imageRecognitionResults);
         } else {
             if (mTtsSpeaker != null && results.size() > 0)  {
                 Recognition mostLikelyResult =
