@@ -71,8 +71,9 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
     private TextView mResultText;
 
     private AtomicBoolean mReady = new AtomicBoolean(false);
-    private ButtonInputDriver mButtonDriver;
     private Gpio mReadyLED;
+    private ButtonInputDriver mButtonDriverA;
+    private ButtonInputDriver mButtonDriverB;
 
     private Timer mTimer = null;
     private MediaPlayer mMediaPlayer = null;
@@ -110,13 +111,21 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
         try {
             mReadyLED = pioManager.openGpio(BoardDefaults.getGPIOForLED());
             mReadyLED.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW);
-            mButtonDriver = new ButtonInputDriver(
+            mButtonDriverA = new ButtonInputDriver(
                     GpioHelper.BUTTON_A,
                     Button.LogicState.PRESSED_WHEN_LOW,
                     KeyEvent.KEYCODE_A);
-            mButtonDriver.register();
+            mButtonDriverA.register();
+
+            mButtonDriverB = new ButtonInputDriver(
+                    GpioHelper.BUTTON_B,
+                    Button.LogicState.PRESSED_WHEN_LOW,
+                    KeyEvent.KEYCODE_B);
+            mButtonDriverB.register();
+
         } catch (IOException e) {
-            mButtonDriver = null;
+            mButtonDriverA = null;
+            mButtonDriverB = null;
             Log.w(TAG, "Could not open GPIO pins", e);
         }
     }
@@ -191,7 +200,9 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         Log.d(TAG, "Received key up: " + keyCode);
+
         if (keyCode == KeyEvent.KEYCODE_A) {
+            // starts a timer which attempts image classification each second
             if (mTimer == null) {
                 mTimer = new Timer();
                 mTimer.schedule(new TimerTask() {
@@ -203,6 +214,16 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             }
             return true;
         }
+
+        if (keyCode == KeyEvent.KEYCODE_B) {
+            // stops/cancels the timer so image classification is stopped
+            if (mTimer != null) {
+                mTimer.cancel();
+                mTimer = null;
+            }
+            return true;
+        }
+
         return super.onKeyUp(keyCode, event);
     }
 
@@ -334,7 +355,12 @@ public class ImageClassifierActivity extends Activity implements ImageReader.OnI
             // close quietly
         }
         try {
-            if (mButtonDriver != null) mButtonDriver.close();
+            if (mButtonDriverA != null) mButtonDriverA.close();
+        } catch (Throwable t) {
+            // close quietly
+        }
+        try {
+            if (mButtonDriverB != null) mButtonDriverB.close();
         } catch (Throwable t) {
             // close quietly
         }
