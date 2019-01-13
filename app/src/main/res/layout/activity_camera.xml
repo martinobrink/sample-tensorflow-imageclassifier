@@ -21,7 +21,7 @@
     android:background="#000"
     android:clickable="true"
     android:focusable="false"
-    android:onClick="onShutterClick"
+    android:onClick="onScreenClick"
     tools:context="com.example.androidthings.imageclassifier.ImageClassifierActivity">
 
     <ImageView

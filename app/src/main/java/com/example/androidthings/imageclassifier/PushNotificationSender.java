@@ -17,7 +17,7 @@ import java.util.Map;
 
 public class PushNotificationSender {
 
-    private int PUSH_NOTIFICATION_GRACE_PERIOD_SECONDS = 20;
+    private int PUSH_NOTIFICATION_GRACE_PERIOD_SECONDS = 10;
     private final RequestQueue requestQueue;
     private Calendar lastPushNotificationSent = Calendar.getInstance();
 
