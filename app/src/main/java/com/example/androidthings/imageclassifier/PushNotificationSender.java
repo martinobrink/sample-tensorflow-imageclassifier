@@ -47,7 +47,7 @@ public class PushNotificationSender {
                     @Override
                     public Map<String, String> getHeaders() {
                         final Map<String, String> headers = new HashMap<>();
-                        headers.put("Access-Token", "o.MdUfjfpmMK0E0lXf8Y9raxah6GQlNoOy");
+                        headers.put("Access-Token", "<REPLACE_WITH_YOUR_OWN_ACCESS_TOKEN>");
                         headers.put("Content-Type", "application/json");
                         return headers;
                     }
