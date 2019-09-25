@@ -155,6 +155,10 @@ public class TensorFlowImageClassifier {
 
     private void deleteDirectory(String path) {
         File file  = new File(path);
+        if (!file.exists()) {
+            return;
+        }
+
         String[] childFiles = file.list();
         for (String childFileName :  childFiles) {
             File childFile  = new File(path, childFileName);
