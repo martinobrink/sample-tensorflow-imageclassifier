@@ -17,12 +17,16 @@ package com.example.androidthings.imageclassifier.classifier;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Log;
 
 import org.tensorflow.lite.Interpreter;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
@@ -41,23 +45,38 @@ public class TensorFlowImageClassifier {
     private static final String MODEL_FILE_V1_1 = "mobilenet_v1_1.0_224_quant.tflite";
     private static final String MODEL_FILE_V2 = "mobilenet_v2_1.4_224.tflite";
 
-    /** Dimensions of inputs. */
+    private static int counter = 0;
+    private static final String IMAGE_CAPTURE_FOLDER_NAME = Environment.getExternalStorageDirectory().toString() + "/training_data";
+
+    /**
+     * Dimensions of inputs.
+     */
     private static final int DIM_BATCH_SIZE = 1;
     private static final int DIM_PIXEL_SIZE = 3;
 
-    /** Labels for categories that the TensorFlow model is trained for. */
+    /**
+     * Labels for categories that the TensorFlow model is trained for.
+     */
     private List<String> labels;
 
-    /** Cache to hold image data. */
+    /**
+     * Cache to hold image data.
+     */
     private ByteBuffer imgData = null;
 
-    /** Inference results (Tensorflow Lite output). */
+    /**
+     * Inference results (Tensorflow Lite output).
+     */
     private byte[][] confidencePerLabel = null;
 
-    /** Pre-allocated buffer for intermediate bitmap pixels */
+    /**
+     * Pre-allocated buffer for intermediate bitmap pixels
+     */
     private int[] intValues;
 
-    /** TensorFlow Lite engine */
+    /**
+     * TensorFlow Lite engine
+     */
     private Interpreter tfLite;
 
     /**
@@ -65,6 +84,7 @@ public class TensorFlowImageClassifier {
      */
     public TensorFlowImageClassifier(Context context, int inputImageWidth, int inputImageHeight)
             throws IOException {
+
         this.tfLite = new Interpreter(TensorFlowHelper.loadModelFile(context, MODEL_FILE));
         this.labels = TensorFlowHelper.readLabels(context, LABELS_FILE);
 
@@ -76,7 +96,10 @@ public class TensorFlowImageClassifier {
 
         // Pre-allocate buffer for image pixels.
         intValues = new int[inputImageWidth * inputImageHeight];
+
+        resetImageCaptureDirectory();
     }
+
 
     /**
      * Clean up the resources used by the classifier.
@@ -93,6 +116,9 @@ public class TensorFlowImageClassifier {
      *              and power consuming.
      */
     public Collection<Recognition> doRecognize(Bitmap image) {
+
+        saveImage(image);
+
         TensorFlowHelper.convertBitmapToByteBuffer(image, intValues, imgData);
 
         long startTime = SystemClock.uptimeMillis();
@@ -105,4 +131,37 @@ public class TensorFlowImageClassifier {
         return TensorFlowHelper.getBestResults(confidencePerLabel, labels);
     }
 
+    private void saveImage(Bitmap image) {
+        try {
+            String filename = "image" + (counter++) + ".jpg";
+            File file = new File(IMAGE_CAPTURE_FOLDER_NAME, filename);
+            Log.d(TAG, "Writing file: " + file.getAbsolutePath());
+            OutputStream fOut = new FileOutputStream(file);
+            image.compress(Bitmap.CompressFormat.JPEG, 90, fOut); // saving the Bitmap to a file compressed as a JPEG with 85% compression rate
+            fOut.flush(); // Not really required
+            fOut.close(); // do not forget to close the stream
+            //MediaStore.Images.Media.insertImage(getContentResolver(), file.getAbsolutePath(), file.getName(), file.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void resetImageCaptureDirectory() {
+        deleteDirectory(IMAGE_CAPTURE_FOLDER_NAME);
+        File folder = new File(IMAGE_CAPTURE_FOLDER_NAME);
+        Log.d(TAG, "Writing folder: " + folder.getAbsolutePath());
+        folder.mkdir();
+    }
+
+    private void deleteDirectory(String path) {
+        File file  = new File(path);
+        String[] childFiles = file.list();
+        for (String childFileName :  childFiles) {
+            File childFile  = new File(path, childFileName);
+            Log.d(TAG, "Deleting file: " + childFile.getAbsolutePath());
+            childFile.delete();
+        }
+        Log.d(TAG, "Deleting folder: " + file.getAbsolutePath());
+        file.delete();
+    }
 }
