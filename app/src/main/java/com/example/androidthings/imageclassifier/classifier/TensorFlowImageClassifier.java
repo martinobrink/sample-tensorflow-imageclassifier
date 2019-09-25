@@ -40,10 +40,8 @@ public class TensorFlowImageClassifier {
     private static final String TAG = "TFImageClassifier";
 
     //private static final String LABELS_FILE = "labels.txt";
-    private static final String LABELS_FILE = "output_labels.txt";
-    private static final String MODEL_FILE = "model_quantized.tflite";
-    private static final String MODEL_FILE_V1_1 = "mobilenet_v1_1.0_224_quant.tflite";
-    private static final String MODEL_FILE_V2 = "mobilenet_v2_1.4_224.tflite";
+    private static final String LABELS_FILE = "labels.txt";
+    private static final String MODEL_FILE = "model.tflite";
 
     private static int counter = 0;
     private static final String IMAGE_CAPTURE_FOLDER_NAME = Environment.getExternalStorageDirectory().toString() + "/training_data";
@@ -51,7 +49,7 @@ public class TensorFlowImageClassifier {
     /**
      * Dimensions of inputs.
      */
-    private static final int DIM_BATCH_SIZE = 1;
+    private static final int DIM_BATCH_SIZE = 4;
     private static final int DIM_PIXEL_SIZE = 3;
 
     /**
@@ -67,7 +65,7 @@ public class TensorFlowImageClassifier {
     /**
      * Inference results (Tensorflow Lite output).
      */
-    private byte[][] confidencePerLabel = null;
+    private float[][] confidencePerLabel = null;
 
     /**
      * Pre-allocated buffer for intermediate bitmap pixels
@@ -92,12 +90,12 @@ public class TensorFlowImageClassifier {
                 ByteBuffer.allocateDirect(
                         DIM_BATCH_SIZE * inputImageWidth * inputImageHeight * DIM_PIXEL_SIZE);
         imgData.order(ByteOrder.nativeOrder());
-        confidencePerLabel = new byte[1][labels.size()];
+        confidencePerLabel = new float[1][labels.size()];
 
         // Pre-allocate buffer for image pixels.
         intValues = new int[inputImageWidth * inputImageHeight];
 
-        resetImageCaptureDirectory();
+        //resetImageCaptureDirectory();
     }
 
 
@@ -117,7 +115,7 @@ public class TensorFlowImageClassifier {
      */
     public Collection<Recognition> doRecognize(Bitmap image) {
 
-        saveImage(image);
+        //saveImage(image);
 
         TensorFlowHelper.convertBitmapToByteBuffer(image, intValues, imgData);
 
