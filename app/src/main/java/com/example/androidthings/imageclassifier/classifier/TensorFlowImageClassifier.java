@@ -35,8 +35,9 @@ public class TensorFlowImageClassifier {
 
     private static final String TAG = "TFImageClassifier";
 
-    private static final String LABELS_FILE = "labels.txt";
-    private static final String MODEL_FILE = "mobilenet_quant_v1_224.tflite";
+    //private static final String LABELS_FILE = "labels.txt";
+    private static final String LABELS_FILE = "output_labels.txt";
+    private static final String MODEL_FILE = "model_quantized.tflite";
     private static final String MODEL_FILE_V1_1 = "mobilenet_v1_1.0_224_quant.tflite";
     private static final String MODEL_FILE_V2 = "mobilenet_v2_1.4_224.tflite";
 
@@ -64,7 +65,7 @@ public class TensorFlowImageClassifier {
      */
     public TensorFlowImageClassifier(Context context, int inputImageWidth, int inputImageHeight)
             throws IOException {
-        this.tfLite = new Interpreter(TensorFlowHelper.loadModelFile(context, MODEL_FILE_V1_1));
+        this.tfLite = new Interpreter(TensorFlowHelper.loadModelFile(context, MODEL_FILE));
         this.labels = TensorFlowHelper.readLabels(context, LABELS_FILE);
 
         imgData =
